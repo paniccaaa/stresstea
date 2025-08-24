@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/paniccaaa/stresstea/internal/config"
+	"github.com/paniccaaa/stresstea/internal/parser"
 )
 
 type Result struct {
@@ -20,10 +20,10 @@ type LoadTester interface {
 }
 
 type BaseTester struct {
-	config *config.Config
+	config *parser.Config
 }
 
-func NewBaseTester(cfg *config.Config) *BaseTester {
+func NewBaseTester(cfg *parser.Config) *BaseTester {
 	return &BaseTester{
 		config: cfg,
 	}

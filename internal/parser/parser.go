@@ -1,14 +1,16 @@
-package config
+package parser
 
 import (
 	"fmt"
 	"os"
 	"time"
 
+	"github.com/paniccaaa/stresstea/internal/config"
 	"gopkg.in/yaml.v3"
 )
 
-type Config struct {
+// TestRunConfig holds configuration for a single test run
+type TestRunConfig struct {
 	Target     string            `yaml:"target"`
 	Duration   time.Duration     `yaml:"duration"`
 	Rate       int               `yaml:"rate"`
@@ -17,6 +19,12 @@ type Config struct {
 	Headers    map[string]string `yaml:"headers,omitempty"`
 	Body       string            `yaml:"body,omitempty"`
 	Method     string            `yaml:"method,omitempty"`
+}
+
+// Config is the main configuration struct that combines all configs
+type Config struct {
+	App  *config.AppConfig `yaml:"app,omitempty"`
+	Test *TestRunConfig    `yaml:"test"`
 }
 
 type YAMLConfig struct {
@@ -74,11 +82,14 @@ func LoadFromFile(filename string) (*Config, error) {
 
 	// Convert YAML configuration to Config
 	config := &Config{
-		Target:     yamlConfig.Global.Target,
-		Duration:   yamlConfig.Global.Duration,
-		Rate:       yamlConfig.Global.Rate,
-		Concurrent: yamlConfig.Global.Concurrent,
-		Protocol:   yamlConfig.Global.Protocol,
+		App: config.DefaultAppConfig(),
+		Test: &TestRunConfig{
+			Target:     yamlConfig.Global.Target,
+			Duration:   yamlConfig.Global.Duration,
+			Rate:       yamlConfig.Global.Rate,
+			Concurrent: yamlConfig.Global.Concurrent,
+			Protocol:   yamlConfig.Global.Protocol,
+		},
 	}
 
 	return config, nil

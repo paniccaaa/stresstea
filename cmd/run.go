@@ -9,6 +9,7 @@ import (
 
 	"github.com/paniccaaa/stresstea/internal/config"
 	"github.com/paniccaaa/stresstea/internal/engine"
+	"github.com/paniccaaa/stresstea/internal/parser"
 	"github.com/spf13/cobra"
 )
 
@@ -37,21 +38,24 @@ Supports HTTP and gRPC protocols.`,
 			return fmt.Errorf("target or config file must be specified")
 		}
 
-		var cfg *config.Config
+		var cfg *parser.Config
 		var err error
 
 		if configFile != "" {
-			cfg, err = config.LoadFromFile(configFile)
+			cfg, err = parser.LoadFromFile(configFile)
 			if err != nil {
 				return fmt.Errorf("failed to load configuration: %w", err)
 			}
 		} else {
-			cfg = &config.Config{
-				Target:     target,
-				Duration:   duration,
-				Rate:       rate,
-				Concurrent: concurrent,
-				Protocol:   protocol,
+			cfg = &parser.Config{
+				App: config.DefaultAppConfig(),
+				Test: &parser.TestRunConfig{
+					Target:     target,
+					Duration:   duration,
+					Rate:       rate,
+					Concurrent: concurrent,
+					Protocol:   protocol,
+				},
 			}
 		}
 

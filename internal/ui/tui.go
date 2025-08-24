@@ -6,35 +6,37 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/paniccaaa/stresstea/internal/config"
 	"github.com/paniccaaa/stresstea/internal/loadtest"
+	"github.com/paniccaaa/stresstea/internal/parser"
 )
 
 type TUI struct {
-	config  *config.Config
+	config  *parser.Config
 	results []loadtest.Result
 	start   time.Time
 }
 
 type model struct {
-	config  *config.Config
-	results []loadtest.Result
-	start   time.Time
-	width   int
-	height  int
+	config      *parser.Config
+	results     []loadtest.Result
+	start       time.Time
+	width       int
+	height      int
+	resultsChan chan loadtest.Result
 }
 
-func NewTUI(cfg *config.Config) *TUI {
+func NewTUI(cfg *parser.Config) *TUI {
 	return &TUI{
 		config: cfg,
 		start:  time.Now(),
 	}
 }
 
-func (t *TUI) Run() error {
+func (t *TUI) Run(resultsChan chan loadtest.Result) error {
 	m := model{
-		config: t.config,
-		start:  t.start,
+		config:      t.config,
+		start:       t.start,
+		resultsChan: resultsChan,
 	}
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
@@ -52,7 +54,27 @@ func (t *TUI) UpdateResults(results chan loadtest.Result) {
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.EnterAltScreen
+	return tea.Batch(
+		tea.EnterAltScreen,
+		m.waitForResults(),
+	)
+}
+
+func (m model) waitForResults() tea.Cmd {
+	return func() tea.Msg {
+		if m.resultsChan != nil {
+			select {
+			case result := <-m.resultsChan:
+				return result
+			default:
+				// Return a tick to continue polling
+				return tea.Tick(time.Millisecond*100, func(t time.Time) tea.Msg {
+					return t
+				})()
+			}
+		}
+		return nil
+	}
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -65,6 +87,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+	case loadtest.Result:
+		m.results = append(m.results, msg)
+		return m, m.waitForResults()
+	case time.Time:
+		// Tick event, continue polling
+		return m, m.waitForResults()
 	}
 
 	return m, nil
@@ -93,7 +121,7 @@ Configuration:
   Duration: %v
   RPS: %d
   Threads: %d
-`, m.config.Target, m.config.Protocol, m.config.Duration, m.config.Rate, m.config.Concurrent))
+`, m.config.Test.Target, m.config.Test.Protocol, m.config.Test.Duration, m.config.Test.Rate, m.config.Test.Concurrent))
 
 	stats := m.calculateStats()
 	statsView := lipgloss.NewStyle().

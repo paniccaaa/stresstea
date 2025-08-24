@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/paniccaaa/stresstea/internal/config"
+	"github.com/paniccaaa/stresstea/internal/parser"
 )
 
 type HTTPTester struct {
@@ -17,12 +17,12 @@ type HTTPTester struct {
 	client *http.Client
 }
 
-func NewHTTPTester(cfg *config.Config) (*HTTPTester, error) {
+func NewHTTPTester(cfg *parser.Config) (*HTTPTester, error) {
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
-			MaxIdleConns:        cfg.Concurrent,
-			MaxIdleConnsPerHost: cfg.Concurrent,
+			MaxIdleConns:        cfg.Test.Concurrent,
+			MaxIdleConnsPerHost: cfg.Test.Concurrent,
 			IdleConnTimeout:     90 * time.Second,
 		},
 	}
@@ -40,12 +40,12 @@ func (h *HTTPTester) Run(ctx context.Context, results chan<- Result) error {
 	workerCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	for i := 0; i < h.config.Concurrent; i++ {
+	for i := 0; i < h.config.Test.Concurrent; i++ {
 		wg.Add(1)
 		go h.worker(workerCtx, &wg, results)
 	}
 
-	timer := time.NewTimer(h.config.Duration)
+	timer := time.NewTimer(h.config.Test.Duration)
 	defer timer.Stop()
 
 	select {
@@ -63,7 +63,7 @@ func (h *HTTPTester) Run(ctx context.Context, results chan<- Result) error {
 func (h *HTTPTester) worker(ctx context.Context, wg *sync.WaitGroup, results chan<- Result) {
 	defer wg.Done()
 
-	ratePerWorker := h.config.Rate / h.config.Concurrent
+	ratePerWorker := h.config.Test.Rate / h.config.Test.Concurrent
 	if ratePerWorker <= 0 {
 		ratePerWorker = 1
 	}
@@ -89,17 +89,17 @@ func (h *HTTPTester) worker(ctx context.Context, wg *sync.WaitGroup, results cha
 func (h *HTTPTester) makeRequest() Result {
 	start := time.Now()
 
-	method := h.config.Method
+	method := h.config.Test.Method
 	if method == "" {
 		method = "GET"
 	}
 
 	var body io.Reader
-	if h.config.Body != "" {
-		body = strings.NewReader(h.config.Body)
+	if h.config.Test.Body != "" {
+		body = strings.NewReader(h.config.Test.Body)
 	}
 
-	req, err := http.NewRequest(method, h.config.Target, body)
+	req, err := http.NewRequest(method, h.config.Test.Target, body)
 	if err != nil {
 		return Result{
 			Timestamp: start,
@@ -108,7 +108,7 @@ func (h *HTTPTester) makeRequest() Result {
 		}
 	}
 
-	for k, v := range h.config.Headers {
+	for k, v := range h.config.Test.Headers {
 		req.Header.Set(k, v)
 	}
 
