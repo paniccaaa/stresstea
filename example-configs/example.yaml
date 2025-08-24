@@ -1,0 +1,36 @@
+global:
+  target: "http://localhost:8080"
+  duration: 60s
+  rate: 100
+  concurrent: 10
+  protocol: "http"
+
+scenarios:
+  - name: "Простой HTTP тест"
+    flow:
+      - http:
+          method: "GET"
+          url: "/api/health"
+          headers:
+            Content-Type: "application/json"
+            User-Agent: "stresstea/1.0"
+      
+      - wait:
+          duration: 1s
+      
+      - http:
+          method: "POST"
+          url: "/api/users"
+          headers:
+            Content-Type: "application/json"
+          body: '{"name": "test", "email": "test@example.com"}'
+
+  - name: "gRPC тест"
+    flow:
+      - grpc:
+          service: "com.example.UserService"
+          method: "GetUser"
+          request:
+            id: 123
+          headers:
+            authorization: "Bearer token123"
