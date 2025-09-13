@@ -12,12 +12,16 @@ import (
 )
 
 type Engine struct {
-	config *parser.Config
-	logger *zap.Logger
-	ui     *ui.TUI
+	config     *parser.Config
+	logger     *zap.Logger
+	outputMode string // "compact", "console"
 }
 
 func Run(cfg *parser.Config) error {
+	return RunWithMode(cfg, "compact")
+}
+
+func RunWithMode(cfg *parser.Config, mode string) error {
 	var logger *zap.Logger
 	var err error
 
@@ -33,11 +37,10 @@ func Run(cfg *parser.Config) error {
 	}
 
 	engine := &Engine{
-		config: cfg,
-		logger: logger,
+		config:     cfg,
+		logger:     logger,
+		outputMode: mode,
 	}
-
-	engine.ui = ui.NewTUI(cfg)
 
 	ctx := context.Background()
 	results := make(chan loadtest.Result, 1000)
@@ -49,11 +52,8 @@ func Run(cfg *parser.Config) error {
 		}
 	}()
 
-	if err := engine.ui.Run(results); err != nil {
-		return fmt.Errorf("failed to start TUI: %w", err)
-	}
-
-	return nil
+	compactTUI := ui.NewCompactTUI(cfg)
+	return compactTUI.Run(results)
 }
 func (e *Engine) runLoadTest(ctx context.Context, results chan<- loadtest.Result) error {
 	var tester loadtest.LoadTester

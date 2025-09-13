@@ -20,6 +20,7 @@ var (
 	concurrent int
 	configFile string
 	protocol   string
+	outputMode string
 )
 
 // runCmd represents the run command
@@ -59,7 +60,7 @@ Supports HTTP and gRPC protocols.`,
 			}
 		}
 
-		return engine.Run(cfg)
+		return engine.RunWithMode(cfg, outputMode)
 	},
 }
 
@@ -73,4 +74,5 @@ func init() {
 	runCmd.Flags().IntVarP(&concurrent, "concurrent", "c", 10, "Number of concurrent connections")
 	runCmd.Flags().StringVarP(&configFile, "config", "f", "", "Path to YAML configuration file")
 	runCmd.Flags().StringVarP(&protocol, "protocol", "p", "http", "Protocol (http or grpc)")
+	runCmd.Flags().StringVarP(&outputMode, "output", "o", "compact", "Output mode (compact, console)")
 }

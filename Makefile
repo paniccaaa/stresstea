@@ -42,5 +42,18 @@ format: ## Format code
 dev: deps build ## Development: update dependencies and build
 	@echo "$(GREEN)Ready for development!$(NC)"
 
+run-server: ## Run test server
+	@echo "$(GREEN)Starting test server...$(NC)"
+	@go run test-server/main.go
+
+test-compact: build ## Test compact TUI mode
+	@echo "$(GREEN)Testing compact TUI mode...$(NC)"
+	@./$(BUILD_DIR)/$(BINARY_NAME) run -t http://httpbin.org/get -r 10 -d 10s -o compact
+
+test-console: build ## Test console mode
+	@echo "$(GREEN)Testing console mode...$(NC)"
+	@./$(BUILD_DIR)/$(BINARY_NAME) run -t http://httpbin.org/get -r 10 -d 10s -o console
+
+
 all: format lint deps test build ## Full build with tests
 	@echo "$(GREEN)Full build completed!$(NC)"

@@ -5,10 +5,10 @@ A modern CLI tool for load testing HTTP and gRPC services with a beautiful TUI i
 ## Features
 
 - 🚀 **HTTP/HTTPS Load Testing** - support for all HTTP methods
-- 🔌 **gRPC Load Testing** - testing gRPC services
+- 🔌 **gRPC Load Testing** - testing gRPC services (planned)
 - 📝 **Declarative YAML Configurations** - simple and clear scenarios
-- 🎨 **Interactive TUI Interface**
-- 📊 **Report and Chart Generation** - detailed analytics of results
+- 🎨 **Compact TUI Interface** - minimal and efficient
+- 📊 **Console Output** - perfect for scripts and CI/CD
 - ⏱️ **Real-time Monitoring** - tracking metrics in real time
 
 ## Installation
@@ -83,6 +83,7 @@ Flags:
 - `-c, --concurrent` - number of concurrent connections (default 10)
 - `-f, --config` - path to YAML configuration file
 - `-p, --protocol` - protocol (http or grpc, default http)
+- `-o, --output` - output mode (compact, console, default compact)
 
 ### report
 Generate report from test results
@@ -102,26 +103,42 @@ Show Stresstea version
 stresstea version
 ```
 
-## TUI Interface
+## Output Modes
 
-When running tests, an interactive TUI interface opens that shows:
+Stresstea supports two output modes:
 
-- Test configuration
-- Real-time statistics
-- Performance metrics
-- Charts and diagrams
+### Compact Mode (Default)
+Interactive TUI interface with:
+- Real-time metrics display
+- Progress tracking
+- Interactive controls (pause, help)
+- Color-coded status indicators
 
 Controls:
-- `q` - exit TUI
+- `h` - show/hide help
+- `p` - pause/resume test
+- `q` - exit application
 - `Ctrl+C` - force quit
+
+### Console Mode
+Simple console output perfect for:
+- Scripts and automation
+- CI/CD pipelines
+- Background monitoring
+
+Controls:
+- `Ctrl+C` - stop test and exit
 
 ## Usage Examples
 
 ### Testing REST API
 
 ```bash
-# Simple GET request
+# Compact mode (default)
 stresstea run -t http://api.example.com/health -r 200 -d 60s
+
+# Console mode for automation
+stresstea run -t http://api.example.com/health -r 200 -d 60s -o console
 
 # POST request with body
 stresstea run -t http://api.example.com/users \
