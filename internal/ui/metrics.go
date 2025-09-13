@@ -32,6 +32,10 @@ type Metrics struct {
 	TargetRPS  int
 	RPSHistory []float64 // Последние 60 секунд для графика
 
+	// Скользящее окно для точного RPS
+	requestTimestamps []time.Time
+	windowSize        time.Duration // Размер окна для расчета RPS (по умолчанию 1 секунда)
+
 	// Статус коды
 	StatusCodes map[int]int
 
@@ -59,12 +63,14 @@ type Metrics struct {
 // NewMetrics создает новую структуру метрик
 func NewMetrics(config *parser.Config) *Metrics {
 	return &Metrics{
-		config:       config,
-		StatusCodes:  make(map[int]int),
-		RPSHistory:   make([]float64, 0, MaxRPSHistory),
-		RecentErrors: make([]string, 0, MaxErrors),
-		TargetRPS:    config.Test.Rate,
-		StartTime:    time.Now(),
+		config:            config,
+		StatusCodes:       make(map[int]int),
+		RPSHistory:        make([]float64, 0, MaxRPSHistory),
+		RecentErrors:      make([]string, 0, MaxErrors),
+		TargetRPS:         config.Test.Rate,
+		StartTime:         time.Now(),
+		requestTimestamps: make([]time.Time, 0, 1000),
+		windowSize:        time.Second, // 1 секунда для расчета RPS
 	}
 }
 
@@ -74,16 +80,18 @@ func (m *Metrics) UpdateMetrics(results []loadtest.Result) {
 		return
 	}
 
+	// Валидация входных данных
+	if m.config == nil {
+		return
+	}
+
 	// Ограничиваем количество результатов в памяти
 	if len(results) > MaxResults {
 		results = results[len(results)-MaxResults:]
 	}
 
-	// Сбрасываем метрики
-	m.TotalRequests = len(results)
-	m.SuccessfulRequests = 0
-	m.FailedRequests = 0
-	m.StatusCodes = make(map[int]int)
+	// НЕ сбрасываем метрики, а обновляем их
+	m.TotalRequests += len(results)
 
 	var latencies []time.Duration
 	var totalLatency time.Duration
@@ -91,6 +99,9 @@ func (m *Metrics) UpdateMetrics(results []loadtest.Result) {
 
 	// Обрабатываем результаты
 	for _, result := range results {
+		// Добавляем timestamp для расчета RPS
+		m.requestTimestamps = append(m.requestTimestamps, result.Timestamp)
+
 		if result.Error != nil {
 			m.FailedRequests++
 			// Добавляем ошибку в лог (максимум MaxErrors)
@@ -113,21 +124,32 @@ func (m *Metrics) UpdateMetrics(results []loadtest.Result) {
 		totalBytes += result.Bytes
 	}
 
-	// Успешность
+	// Успешность с валидацией
 	if m.TotalRequests > 0 {
 		m.SuccessRate = float64(m.SuccessfulRequests) / float64(m.TotalRequests) * 100
 		m.ErrorRate = float64(m.FailedRequests) / float64(m.TotalRequests) * 100
+
+		// Валидация: сумма успешных и неудачных не должна превышать общее количество
+		if m.SuccessfulRequests+m.FailedRequests > m.TotalRequests {
+			// Корректируем если есть несоответствие
+			m.TotalRequests = m.SuccessfulRequests + m.FailedRequests
+		}
 	}
 
-	// Время отклика
+	// Время отклика - обновляем только если есть новые успешные запросы
 	if len(latencies) > 0 {
 		sort.Slice(latencies, func(i, j int) bool {
 			return latencies[i] < latencies[j]
 		})
 
+		// Обновляем метрики латентности
 		m.AvgLatency = totalLatency / time.Duration(len(latencies))
-		m.MinLatency = latencies[0]
-		m.MaxLatency = latencies[len(latencies)-1]
+		if m.MinLatency == 0 || latencies[0] < m.MinLatency {
+			m.MinLatency = latencies[0]
+		}
+		if latencies[len(latencies)-1] > m.MaxLatency {
+			m.MaxLatency = latencies[len(latencies)-1]
+		}
 
 		// Percentiles
 		m.P50Latency = m.calculatePercentile(latencies, 50)
@@ -145,18 +167,16 @@ func (m *Metrics) UpdateMetrics(results []loadtest.Result) {
 		}
 	}
 
-	// RPS
-	if m.ElapsedTime.Seconds() > 0 {
-		m.CurrentRPS = float64(m.TotalRequests) / m.ElapsedTime.Seconds()
-		m.RequestsPerSecond = m.CurrentRPS
-	}
+	// RPS - используем скользящее окно
+	m.CurrentRPS = m.calculateCurrentRPS()
+	m.RequestsPerSecond = m.CurrentRPS
 
 	// Throughput
+	m.TotalBytes += totalBytes
 	if m.ElapsedTime.Seconds() > 0 {
-		m.BytesPerSecond = int64(float64(totalBytes) / m.ElapsedTime.Seconds())
+		m.BytesPerSecond = int64(float64(m.TotalBytes) / m.ElapsedTime.Seconds())
 		m.ThroughputMBps = float64(m.BytesPerSecond) / (1024 * 1024)
 	}
-	m.TotalBytes = totalBytes
 
 	// Обновляем историю RPS
 	m.updateRPSHistory()
@@ -174,6 +194,49 @@ func (m *Metrics) calculatePercentile(latencies []time.Duration, percentile int)
 	}
 
 	return latencies[index]
+}
+
+// calculateCurrentRPS вычисляет текущий RPS используя скользящее окно
+func (m *Metrics) calculateCurrentRPS() float64 {
+	if len(m.requestTimestamps) == 0 {
+		return 0
+	}
+
+	now := time.Now()
+	windowStart := now.Add(-m.windowSize)
+
+	// Подсчитываем запросы в окне
+	count := 0
+	for _, timestamp := range m.requestTimestamps {
+		if timestamp.After(windowStart) {
+			count++
+		}
+	}
+
+	// Очищаем старые timestamps
+	m.cleanOldTimestamps(now)
+
+	// Возвращаем RPS для окна
+	return float64(count) / m.windowSize.Seconds()
+}
+
+// cleanOldTimestamps удаляет timestamps старше окна
+func (m *Metrics) cleanOldTimestamps(now time.Time) {
+	windowStart := now.Add(-m.windowSize)
+
+	// Находим первый индекс, который нужно сохранить
+	keepFrom := 0
+	for i, timestamp := range m.requestTimestamps {
+		if timestamp.After(windowStart) {
+			keepFrom = i
+			break
+		}
+	}
+
+	// Удаляем старые timestamps
+	if keepFrom > 0 {
+		m.requestTimestamps = m.requestTimestamps[keepFrom:]
+	}
 }
 
 // updateRPSHistory обновляет историю RPS

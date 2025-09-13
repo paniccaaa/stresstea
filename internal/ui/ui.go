@@ -267,10 +267,13 @@ func (t CompactTUI) renderStatusCodes() string {
 		return ""
 	}
 
+	// Используем отсортированные статус коды для стабильного отображения
+	sortedCodes := t.metrics.GetStatusCodesSorted()
+
 	var codes []string
-	for status, count := range t.metrics.StatusCodes {
-		style := GetStatusStyle(status)
-		codes = append(codes, style.Render(fmt.Sprintf("%d: %d", status, count)))
+	for _, codeInfo := range sortedCodes {
+		style := GetStatusStyle(codeInfo.Status)
+		codes = append(codes, style.Render(fmt.Sprintf("%d: %d", codeInfo.Status, codeInfo.Count)))
 	}
 
 	if len(codes) > 0 {
@@ -288,8 +291,10 @@ func (t CompactTUI) renderErrors() string {
 		return ""
 	}
 
-	// Показываем только последние 3 ошибки
-	errors := t.metrics.RecentErrors
+	// Показываем только последние 3 ошибки в стабильном порядке
+	errors := make([]string, len(t.metrics.RecentErrors))
+	copy(errors, t.metrics.RecentErrors)
+
 	if len(errors) > 3 {
 		errors = errors[len(errors)-3:]
 	}

@@ -63,12 +63,15 @@ func (h *HTTPTester) Run(ctx context.Context, results chan<- Result) error {
 func (h *HTTPTester) worker(ctx context.Context, wg *sync.WaitGroup, results chan<- Result) {
 	defer wg.Done()
 
-	ratePerWorker := h.config.Test.Rate / h.config.Test.Concurrent
+	// Более точный расчет ratePerWorker
+	ratePerWorker := float64(h.config.Test.Rate) / float64(h.config.Test.Concurrent)
 	if ratePerWorker <= 0 {
 		ratePerWorker = 1
 	}
 
-	ticker := time.NewTicker(time.Second / time.Duration(ratePerWorker))
+	// Используем более точный интервал
+	interval := time.Duration(float64(time.Second) / ratePerWorker)
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	for {

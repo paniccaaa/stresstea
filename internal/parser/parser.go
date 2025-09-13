@@ -80,6 +80,11 @@ func LoadFromFile(filename string) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse YAML: %w", err)
 	}
 
+	// Валидация конфигурации
+	if err := validateYAMLConfig(&yamlConfig); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+
 	// Convert YAML configuration to Config
 	config := &Config{
 		App: config.DefaultAppConfig(),
@@ -92,5 +97,33 @@ func LoadFromFile(filename string) (*Config, error) {
 		},
 	}
 
+	// TODO: Добавить поддержку scenarios в будущем
+	// Пока используем только Global конфигурацию
+
 	return config, nil
+}
+
+// validateYAMLConfig валидирует YAML конфигурацию
+func validateYAMLConfig(config *YAMLConfig) error {
+	if config.Global.Target == "" {
+		return fmt.Errorf("target is required")
+	}
+
+	if config.Global.Rate <= 0 {
+		return fmt.Errorf("rate must be positive")
+	}
+
+	if config.Global.Concurrent <= 0 {
+		return fmt.Errorf("concurrent must be positive")
+	}
+
+	if config.Global.Duration <= 0 {
+		return fmt.Errorf("duration must be positive")
+	}
+
+	if config.Global.Protocol != "http" && config.Global.Protocol != "grpc" {
+		return fmt.Errorf("protocol must be 'http' or 'grpc'")
+	}
+
+	return nil
 }
