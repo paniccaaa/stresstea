@@ -20,6 +20,7 @@ var (
 	concurrent int
 	configFile string
 	protocol   string
+	cpus       int
 )
 
 // runCmd represents the run command
@@ -55,6 +56,7 @@ Supports HTTP and gRPC protocols.`,
 					Rate:       rate,
 					Concurrent: concurrent,
 					Protocol:   protocol,
+					CPUs:       cpus,
 				},
 			}
 		}
@@ -73,4 +75,5 @@ func init() {
 	runCmd.Flags().IntVarP(&concurrent, "concurrent", "c", 10, "Number of concurrent connections")
 	runCmd.Flags().StringVarP(&configFile, "config", "f", "", "Path to YAML configuration file")
 	runCmd.Flags().StringVarP(&protocol, "protocol", "p", "http", "Protocol (http or grpc)")
+	runCmd.Flags().IntVarP(&cpus, "cpus", "", 0, "Number of CPUs to use (0 = all available)")
 }

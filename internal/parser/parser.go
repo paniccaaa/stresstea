@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/paniccaaa/stresstea/internal/config"
@@ -19,6 +20,7 @@ type TestRunConfig struct {
 	Headers    map[string]string `yaml:"headers,omitempty"`
 	Body       string            `yaml:"body,omitempty"`
 	Method     string            `yaml:"method,omitempty"`
+	CPUs       int               `yaml:"cpus,omitempty"` // Количество процессоров для использования
 }
 
 // Config is the main configuration struct that combines all configs
@@ -38,6 +40,7 @@ type GlobalConfig struct {
 	Rate       int           `yaml:"rate"`
 	Concurrent int           `yaml:"concurrent"`
 	Protocol   string        `yaml:"protocol"`
+	CPUs       int           `yaml:"cpus,omitempty"` // Количество процессоров для использования
 }
 
 type ScenarioConfig struct {
@@ -94,6 +97,7 @@ func LoadFromFile(filename string) (*Config, error) {
 			Rate:       yamlConfig.Global.Rate,
 			Concurrent: yamlConfig.Global.Concurrent,
 			Protocol:   yamlConfig.Global.Protocol,
+			CPUs:       yamlConfig.Global.CPUs,
 		},
 	}
 
@@ -126,4 +130,12 @@ func validateYAMLConfig(config *YAMLConfig) error {
 	}
 
 	return nil
+}
+
+func (c *Config) SetupRuntime() {
+	if c.Test.CPUs > 0 {
+		runtime.GOMAXPROCS(c.Test.CPUs)
+	} else {
+		runtime.GOMAXPROCS(runtime.NumCPU())
+	}
 }

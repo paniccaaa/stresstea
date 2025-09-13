@@ -17,10 +17,12 @@ type Engine struct {
 }
 
 func Run(cfg *parser.Config) error {
+	// Настраиваем runtime перед началом работы
+	cfg.SetupRuntime()
+
 	var logger *zap.Logger
 	var err error
 
-	// Use app logger config if available, otherwise use development logger
 	if cfg.App != nil && cfg.App.Logger != nil {
 		logger, err = config.NewLogger(cfg.App.Logger)
 	} else {

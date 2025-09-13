@@ -4,6 +4,7 @@ global:
   rate: 100
   concurrent: 10
   protocol: "http"
+  cpus: 0 
 
 scenarios:
   - name: "Простой HTTP тест"
