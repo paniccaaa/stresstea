@@ -24,13 +24,3 @@ scenarios:
           headers:
             Content-Type: "application/json"
           body: '{"name": "test", "email": "test@example.com"}'
-
-  - name: "gRPC тест"
-    flow:
-      - grpc:
-          service: "com.example.UserService"
-          method: "GetUser"
-          request:
-            id: 123
-          headers:
-            authorization: "Bearer token123"
