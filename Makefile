@@ -25,7 +25,6 @@ test-unit: ## Run unit tests
 deps: ## Update dependencies
 	@echo "$(GREEN)Updating dependencies...$(NC)"
 	@go mod tidy
-	@go mod download
 
 lint: ## Run linter
 	@echo "$(GREEN)Checking code...$(NC)"

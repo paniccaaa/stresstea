@@ -16,8 +16,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Show Stresstea version",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Stresstea v%s\n", Version)
-		fmt.Println("CLI tool for load testing HTTP and gRPC services")
+		fmt.Printf("stresstea v%s\n", Version)
 	},
 }
 
