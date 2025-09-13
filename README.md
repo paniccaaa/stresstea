@@ -8,7 +8,6 @@ A modern CLI tool for load testing HTTP and gRPC services with a beautiful TUI i
 - 🔌 **gRPC Load Testing** - testing gRPC services (planned)
 - 📝 **Declarative YAML Configurations** - simple and clear scenarios
 - 🎨 **Compact TUI Interface** - minimal and efficient
-- 📊 **Console Output** - perfect for scripts and CI/CD
 - ⏱️ **Real-time Monitoring** - tracking metrics in real time
 
 ## Installation
@@ -83,7 +82,6 @@ Flags:
 - `-c, --concurrent` - number of concurrent connections (default 10)
 - `-f, --config` - path to YAML configuration file
 - `-p, --protocol` - protocol (http or grpc, default http)
-- `-o, --output` - output mode (compact, console, default compact)
 
 ### report
 Generate report from test results
@@ -103,12 +101,9 @@ Show Stresstea version
 stresstea version
 ```
 
-## Output Modes
+## TUI Interface
 
-Stresstea supports two output modes:
-
-### Compact Mode (Default)
-Interactive TUI interface with:
+Stresstea features a compact TUI interface with:
 - Real-time metrics display
 - Progress tracking
 - Interactive controls (pause, help)
@@ -120,25 +115,13 @@ Controls:
 - `q` - exit application
 - `Ctrl+C` - force quit
 
-### Console Mode
-Simple console output perfect for:
-- Scripts and automation
-- CI/CD pipelines
-- Background monitoring
-
-Controls:
-- `Ctrl+C` - stop test and exit
-
 ## Usage Examples
 
 ### Testing REST API
 
 ```bash
-# Compact mode (default)
+# Basic load test
 stresstea run -t http://api.example.com/health -r 200 -d 60s
-
-# Console mode for automation
-stresstea run -t http://api.example.com/health -r 200 -d 60s -o console
 
 # POST request with body
 stresstea run -t http://api.example.com/users \

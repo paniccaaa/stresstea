@@ -12,16 +12,11 @@ import (
 )
 
 type Engine struct {
-	config     *parser.Config
-	logger     *zap.Logger
-	outputMode string // "compact", "console"
+	config *parser.Config
+	logger *zap.Logger
 }
 
 func Run(cfg *parser.Config) error {
-	return RunWithMode(cfg, "compact")
-}
-
-func RunWithMode(cfg *parser.Config, mode string) error {
 	var logger *zap.Logger
 	var err error
 
@@ -37,9 +32,8 @@ func RunWithMode(cfg *parser.Config, mode string) error {
 	}
 
 	engine := &Engine{
-		config:     cfg,
-		logger:     logger,
-		outputMode: mode,
+		config: cfg,
+		logger: logger,
 	}
 
 	ctx := context.Background()

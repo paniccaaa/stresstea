@@ -18,7 +18,7 @@ build: ## Build binary file
 	@go build -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
 	@echo "$(GREEN)Done! Binary file: $(BUILD_DIR)/$(BINARY_NAME)$(NC)"
 
-test: ## Run tests
+test-unit: ## Run unit tests
 	@echo "$(GREEN)Running tests...$(NC)"
 	@go test -v ./...
 
@@ -46,14 +46,11 @@ run-server: ## Run test server
 	@echo "$(GREEN)Starting test server...$(NC)"
 	@go run test-server/main.go
 
-test-compact: build ## Test compact TUI mode
+test: build ## Test compact TUI mode
 	@echo "$(GREEN)Testing compact TUI mode...$(NC)"
-	@./$(BUILD_DIR)/$(BINARY_NAME) run -t http://httpbin.org/get -r 10 -d 10s -o compact
-
-test-console: build ## Test console mode
-	@echo "$(GREEN)Testing console mode...$(NC)"
-	@./$(BUILD_DIR)/$(BINARY_NAME) run -t http://httpbin.org/get -r 10 -d 10s -o console
+	@./$(BUILD_DIR)/$(BINARY_NAME) run -t http://httpbin.org/get -r 10 -d 10s
 
 
-all: format lint deps test build ## Full build with tests
+
+all: format lint deps test-unit build ## Full build with tests
 	@echo "$(GREEN)Full build completed!$(NC)"
