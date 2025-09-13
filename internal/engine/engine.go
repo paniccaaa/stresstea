@@ -62,8 +62,6 @@ func (e *Engine) runLoadTest(ctx context.Context, results chan<- loadtest.Result
 	switch e.config.Test.Protocol {
 	case "http":
 		tester, err = loadtest.NewHTTPTester(e.config)
-	case "grpc":
-		tester, err = loadtest.NewGRPCTester(e.config)
 	default:
 		return fmt.Errorf("unsupported protocol: %s", e.config.Test.Protocol)
 	}
